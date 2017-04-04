@@ -1,7 +1,11 @@
 plugins {
     id 'application'
+    id 'maven'
     id 'de.fuerstenau.buildconfig' version '1.1.7'
+    id 'net.researchgate.release' version '2.3.5'
 }
+
+group = 'com.omnitech'
 
 repositories {
     mavenCentral()
@@ -46,7 +50,7 @@ def getVersionName = { ->
 }
 
 buildConfig {
-    appName = 'ODK Validate'
+    appName = 'odk-validate-port'
     version = getVersionName()
     clsName = 'BuildConfig'
     packageName = 'org.opendatakit.validate.buildconfig'
@@ -74,3 +78,25 @@ jar {
     // don't match with big jar, so the runtime refuses to run the jar. The fix is to exclude the signature files.
     exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
 }
+
+
+afterReleaseBuild.dependsOn uploadArchives
+
+configurations { deployerJars }
+
+dependencies {
+    deployerJars 'org.apache.maven.wagon:wagon-ssh:2.12'
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            configuration = configurations.deployerJars
+            String repo = version.endsWith('SNAPSHOT') ? "${deployUrl}/snapshots" : "${deployUrl}/releases"
+            repository(url: repo) {
+                authentication(userName: deployU, password: deployP)
+            }
+        }
+    }
+}
+
